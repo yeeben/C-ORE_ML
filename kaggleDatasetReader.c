@@ -27,7 +27,11 @@ struct LabelHeader {
     uint32_t size;
 };
 
-static uint8_t imageDataset[KAGGLE_IMAGE_HEIGHT][KAGGLE_IMAGE_WIDTH][KAGGLE_DATASET_MAX_SIZE + 1] = {};
+struct GreyScaleImage {
+    uint8_t pixels[KAGGLE_IMAGE_HEIGHT][KAGGLE_IMAGE_WIDTH];
+};
+
+static struct GreyScaleImage imageDataset[KAGGLE_DATASET_MAX_SIZE + 1] = {};
 
 
 void readImagesHeader(const char *filename, uint32_t *imageDatasetCount) {
@@ -90,19 +94,39 @@ void readLabelsHeader(const char *filename, uint32_t *labelDatasetCount) {
     fclose(file);
 }
 
-void loadImagesData(const char *filename, uint32_t imageDatasetCount) {
+void loadImagesData(const char *filename, uint32_t imageDatasetCount, bool outputImage) {
+    struct GreyScaleImage singleImageBuffer = {};
+    
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
         return;
     }
-    uint8_t imageBuffer[KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH] = {};
 
-    fread(imageBuffer, 1, IMAGE_HEADER_BUFFER_SIZE, file); // Get Past the Header in the stream
+    fread(&singleImageBuffer, 1, IMAGE_HEADER_BUFFER_SIZE, file); // Get Past the Header in the stream
+    fread(&singleImageBuffer, 1, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, file);
 
-    for(int i = 0; i < imageDatasetCount; i ++) {
-        fread(imageBuffer, 1, i * KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, file);
-        memcpy(imageDataset[i], imageBuffer, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH);
+    for(int i = 0; i < imageDatasetCount; i++) {
+        fread(&imageDataset[i], 1, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, file);
+    }
+    fclose(file);
+    // I like to sample the images produced here to sanity check that my arrays have been loaded correctly
+    // Using a python plotter to view the grey scaled value
+    if(outputImage) {
+        for(int i = 0; i < 6; i++) {
+
+            char outputFilename[20];
+            uint32_t sampledData = rand() % imageDatasetCount;
+            snprintf(outputFilename, sizeof(outputFilename), "sampleImage%d.png", i);
+
+            FILE *outFile = fopen(outputFilename, "wb");
+            if (outFile == NULL) {
+                perror("Error opening output file");
+                continue;
+            }
+            fwrite(&imageDataset[sampledData], 1, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, outFile);
+            fclose(outFile);
+        }
     }
 }
 
@@ -125,11 +149,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    loadImagesData(argv[1], imageDatasetCount);
-
-
-
-
+    loadImagesData(argv[1], imageDatasetCount, false);
 
     return 0;
 }

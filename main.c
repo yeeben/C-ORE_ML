@@ -9,6 +9,8 @@ static uint32_t image[HEIGHT_IMAGE][WIDTH_IMAGE] = {};
 
 
 int main() {
+    
+
     printf("Hello World\n");
     return 0;
 }

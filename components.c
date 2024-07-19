@@ -1,4 +1,6 @@
-uint32_t relu(uint32_t x) {
+#include <stdint.h>
+
+uint8_t relu(uint8_t x) {
     if (x > 0) {
         return x;
     } else {

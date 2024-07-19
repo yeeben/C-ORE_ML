@@ -5,8 +5,15 @@
 
 #define IMAGES_MAGIC_NUMBER 2051
 #define LABEL_MAGIC_NUMBER 2049
+
 #define BITS_IN_BYTE 8
-#define HEADER_BUFFER_SIZE 16
+#define IMAGE_HEADER_BUFFER_SIZE 16
+#define LABEL_HEADER_BUFFER_SIZE 8
+
+#define KAGGLE_IMAGE_HEIGHT 28
+#define KAGGLE_IMAGE_WIDTH 28
+#define KAGGLE_DATASET_MAX_SIZE 60000
+
 
 struct ImageHeader {
     uint32_t magic;
@@ -20,11 +27,12 @@ struct LabelHeader {
     uint32_t size;
 };
 
-static bool verifyMagic(const char *filename, unsigned int magic);
+static uint8_t imageDataset[KAGGLE_IMAGE_HEIGHT][KAGGLE_IMAGE_WIDTH][KAGGLE_DATASET_MAX_SIZE + 1] = {};
 
 
-void readImagesFile(const char *filename) {
+void readImagesHeader(const char *filename, uint32_t *imageDatasetCount) {
     struct ImageHeader header = {};
+    uint8_t headerReadBuffer[IMAGE_HEADER_BUFFER_SIZE] = {};
 
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -32,16 +40,15 @@ void readImagesFile(const char *filename) {
         return;
     }
 
-    uint8_t readBuffer[HEADER_BUFFER_SIZE];
-    if (fread(readBuffer, 1, HEADER_BUFFER_SIZE, file) != HEADER_BUFFER_SIZE) {
+    if (fread(headerReadBuffer, 1, IMAGE_HEADER_BUFFER_SIZE, file) != IMAGE_HEADER_BUFFER_SIZE) {
         perror("Error reading file");
         fclose(file);
         return;
     }
-    header.magic = (readBuffer[0] << 24) | (readBuffer[1] << 16) | (readBuffer[2] << 8) | readBuffer[3];
-    header.size = (readBuffer[4] << 24) | (readBuffer[5] << 16) | (readBuffer[6] << 8) | readBuffer[7];
-    header.rows = (readBuffer[8] << 24) | (readBuffer[9] << 16) | (readBuffer[10] << 8) | readBuffer[11];
-    header.columns = (readBuffer[12] << 24) | (readBuffer[13] << 16) | (readBuffer[14] << 8) | readBuffer[15];
+    header.magic = (headerReadBuffer[0] << 24) | (headerReadBuffer[1] << 16) | (headerReadBuffer[2] << 8) | headerReadBuffer[3];
+    header.size = (headerReadBuffer[4] << 24) | (headerReadBuffer[5] << 16) | (headerReadBuffer[6] << 8) | headerReadBuffer[7];
+    header.rows = (headerReadBuffer[8] << 24) | (headerReadBuffer[9] << 16) | (headerReadBuffer[10] << 8) | headerReadBuffer[11];
+    header.columns = (headerReadBuffer[12] << 24) | (headerReadBuffer[13] << 16) | (headerReadBuffer[14] << 8) | headerReadBuffer[15];
 
     if (header.magic != IMAGES_MAGIC_NUMBER) {
         fprintf(stderr, "Invalid images magic number: %d\n", header.magic);
@@ -49,11 +56,12 @@ void readImagesFile(const char *filename) {
         return;
     }
 
-    printf("Parsed Header: magic=%d, size=%d, rows=%d, columns=%d\n", header.magic, header.size, header.rows, header.columns);
+    printf("Parsed %s Header: magic=%d, size=%d, rows=%d, columns=%d\n", filename, header.magic, header.size, header.rows, header.columns);
+    *imageDatasetCount = header.size;
     fclose(file);
 }
 
-void readLablesFile(const char *filename) {
+void readLabelsHeader(const char *filename, uint32_t *labelDatasetCount) {
     struct LabelHeader header = {};
     
     FILE *file = fopen(filename, "r");
@@ -62,27 +70,45 @@ void readLablesFile(const char *filename) {
         return;
     }
 
-    uint8_t buffer[4 * BITS_IN_BYTE];
-    if (fread(buffer, 1, 8, file) != 8) {
+    uint8_t headerReadBuffer[LABEL_HEADER_BUFFER_SIZE];
+    if (fread(headerReadBuffer, 1, LABEL_HEADER_BUFFER_SIZE, file) != LABEL_HEADER_BUFFER_SIZE) {
         perror("Error reading file");
         fclose(file);
         return;
     }
 
-    header.magic = (buffer[0] << 24) | (buffer[1] << 16) | (buffer[2] << 8) | buffer[3];
-    header.size = (buffer[4] << 24) | (buffer[5] << 16) | (buffer[6] << 8) | buffer[7];
+    header.magic = (headerReadBuffer[0] << 24) | (headerReadBuffer[1] << 16) | (headerReadBuffer[2] << 8) | headerReadBuffer[3];
+    header.size = (headerReadBuffer[4] << 24) | (headerReadBuffer[5] << 16) | (headerReadBuffer[6] << 8) | headerReadBuffer[7];
     if (header.magic != LABEL_MAGIC_NUMBER) {
         fprintf(stderr, "Invalid labels magic number: %d\n", header.magic);
         fclose(file);
         return;
     }
 
-    printf("Parsed Header: magic=%d, size=%d\n", header.magic, header.size);
+    printf("Parsed %s Header: magic=%d, size=%d\n", filename, header.magic, header.size);
+    *labelDatasetCount = header.size;
     fclose(file);
+}
 
+void loadImagesData(const char *filename, uint32_t imageDatasetCount) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+    uint8_t imageBuffer[KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH] = {};
+
+    fread(imageBuffer, 1, IMAGE_HEADER_BUFFER_SIZE, file); // Get Past the Header in the stream
+
+    for(int i = 0; i < imageDatasetCount; i ++) {
+        fread(imageBuffer, 1, i * KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, file);
+        memcpy(imageDataset[i], imageBuffer, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH);
+    }
 }
 
 int main(int argc, char *argv[]) {
+    uint32_t imageDatasetCount = 0;
+    uint32_t labelDatasetCount = 0;
     printf("\n");
     printf("Starting Reading Process\n");
 
@@ -91,9 +117,18 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
         return 1;
     }
-    printf("Reading file %s\n", argv[1]);
-    readImagesFile(argv[1]);
-    readLablesFile(argv[2]);
+    readImagesHeader(argv[1], &imageDatasetCount);
+    readLabelsHeader(argv[2], &labelDatasetCount);
+
+    if (imageDatasetCount != labelDatasetCount) {
+        fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", imageDatasetCount, labelDatasetCount);
+        return 1;
+    }
+
+    loadImagesData(argv[1], imageDatasetCount);
+
+
+
 
 
     return 0;

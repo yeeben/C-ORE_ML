@@ -32,21 +32,21 @@ struct GreyScaleImage {
 };
 
 static struct GreyScaleImage imageDataset[KAGGLE_DATASET_MAX_SIZE + 1] = {};
+static uint8_t labelDataset[KAGGLE_DATASET_MAX_SIZE + 1] = {};
 
 
-void readImagesHeader(const char *filename, uint32_t *imageDatasetCount) {
+void readImagesHeader(FILE* fp, uint32_t* imageDatasetCount) {
     struct ImageHeader header = {};
     uint8_t headerReadBuffer[IMAGE_HEADER_BUFFER_SIZE] = {};
 
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
+    if (fp == NULL) {
         perror("Error opening file");
         return;
     }
 
-    if (fread(headerReadBuffer, 1, IMAGE_HEADER_BUFFER_SIZE, file) != IMAGE_HEADER_BUFFER_SIZE) {
+    if (fread(headerReadBuffer, 1, IMAGE_HEADER_BUFFER_SIZE, fp) != IMAGE_HEADER_BUFFER_SIZE) {
         perror("Error reading file");
-        fclose(file);
+        fclose(fp);
         return;
     }
     header.magic = (headerReadBuffer[0] << 24) | (headerReadBuffer[1] << 16) | (headerReadBuffer[2] << 8) | headerReadBuffer[3];
@@ -56,28 +56,26 @@ void readImagesHeader(const char *filename, uint32_t *imageDatasetCount) {
 
     if (header.magic != IMAGES_MAGIC_NUMBER) {
         fprintf(stderr, "Invalid images magic number: %d\n", header.magic);
-        fclose(file);
+        fclose(fp);
         return;
     }
 
-    printf("Parsed %s Header: magic=%d, size=%d, rows=%d, columns=%d\n", filename, header.magic, header.size, header.rows, header.columns);
+    printf("Parsed Image File Header: magic=%d, size=%d, rows=%d, columns=%d\n", header.magic, header.size, header.rows, header.columns);
     *imageDatasetCount = header.size;
-    fclose(file);
 }
 
-void readLabelsHeader(const char *filename, uint32_t *labelDatasetCount) {
+void readLabelsHeader(FILE* fp, uint32_t *labelDatasetCount) {
     struct LabelHeader header = {};
     
-    FILE *file = fopen(filename, "r");
-    if (file == NULL) {
+    if (fp == NULL) {
         perror("Error opening file");
         return;
     }
 
     uint8_t headerReadBuffer[LABEL_HEADER_BUFFER_SIZE];
-    if (fread(headerReadBuffer, 1, LABEL_HEADER_BUFFER_SIZE, file) != LABEL_HEADER_BUFFER_SIZE) {
+    if (fread(headerReadBuffer, 1, LABEL_HEADER_BUFFER_SIZE, fp) != LABEL_HEADER_BUFFER_SIZE) {
         perror("Error reading file");
-        fclose(file);
+        fclose(fp);
         return;
     }
 
@@ -85,17 +83,31 @@ void readLabelsHeader(const char *filename, uint32_t *labelDatasetCount) {
     header.size = (headerReadBuffer[4] << 24) | (headerReadBuffer[5] << 16) | (headerReadBuffer[6] << 8) | headerReadBuffer[7];
     if (header.magic != LABEL_MAGIC_NUMBER) {
         fprintf(stderr, "Invalid labels magic number: %d\n", header.magic);
-        fclose(file);
+        fclose(fp);
         return;
     }
 
-    printf("Parsed %s Header: magic=%d, size=%d\n", filename, header.magic, header.size);
+    printf("Parsed Label File Header: magic=%d, size=%d\n", header.magic, header.size);
     *labelDatasetCount = header.size;
-    fclose(file);
 }
 
-void loadImagesData(const char *filename, uint32_t imageDatasetCount, bool outputImage) {
-    struct GreyScaleImage singleImageBuffer = {};
+void loadImagesData(const char *filename, uint32_t* imageDatasetCount) {    
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("Error opening file");
+        return;
+    }
+
+    readImagesHeader(file, imageDatasetCount);
+
+    for(int i = 0; i < *imageDatasetCount; i++) {
+        fread(&imageDataset[i], 1, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, file);
+    }
+    fclose(file);
+    // I like to sample the images produced here to sanity check that my arrays have been loaded correctly
+    // Using a python plotter to view the grey scaled value
+}
+void loadLabelsData(const char *filename, uint32_t* imageDatasetCount) {
     
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -103,30 +115,29 @@ void loadImagesData(const char *filename, uint32_t imageDatasetCount, bool outpu
         return;
     }
 
-    fread(&singleImageBuffer, 1, IMAGE_HEADER_BUFFER_SIZE, file); // Get Past the Header in the stream
-    fread(&singleImageBuffer, 1, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, file);
+    readLabelsHeader(file, imageDatasetCount);
 
-    for(int i = 0; i < imageDatasetCount; i++) {
-        fread(&imageDataset[i], 1, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, file);
+    for(int i = 0; i < *imageDatasetCount; i++) {
+        fread(&labelDataset[i], 1, sizeof(uint8_t), file);
     }
     fclose(file);
-    // I like to sample the images produced here to sanity check that my arrays have been loaded correctly
-    // Using a python plotter to view the grey scaled value
-    if(outputImage) {
-        for(int i = 0; i < 6; i++) {
+}
 
-            char outputFilename[20];
-            uint32_t sampledData = rand() % imageDatasetCount;
-            snprintf(outputFilename, sizeof(outputFilename), "sampleImage%d.png", i);
+void output_sample_images(uint32_t imageDatasetCount) {
+    for(int i = 0; i < 6; i++) {
 
-            FILE *outFile = fopen(outputFilename, "wb");
-            if (outFile == NULL) {
-                perror("Error opening output file");
-                continue;
-            }
-            fwrite(&imageDataset[sampledData], 1, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, outFile);
-            fclose(outFile);
+        char outputFilename[50];
+        uint32_t sampledIdx = rand() % imageDatasetCount;
+        uint8_t sampledLabel = labelDataset[sampledIdx];
+        snprintf(outputFilename, sizeof(outputFilename), "outFile/sample%d_idx%d.png", sampledLabel, sampledIdx);
+
+        FILE *outFile = fopen(outputFilename, "wb");
+        if (outFile == NULL) {
+            perror("Error opening output file");
+            continue;
         }
+        fwrite(&imageDataset[sampledIdx], 1, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, outFile);
+        fclose(outFile);
     }
 }
 
@@ -137,19 +148,25 @@ int main(int argc, char *argv[]) {
     printf("Starting Reading Process\n");
 
 
-    if (argc < 2) {
-        fprintf(stderr, "Usage: %s <filename>\n", argv[0]);
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <filename>  <filename>\n", argv[0]);
         return 1;
     }
-    readImagesHeader(argv[1], &imageDatasetCount);
-    readLabelsHeader(argv[2], &labelDatasetCount);
+
+
+    loadImagesData(argv[1], &imageDatasetCount);
+    loadLabelsData(argv[2], &labelDatasetCount);
 
     if (imageDatasetCount != labelDatasetCount) {
         fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", imageDatasetCount, labelDatasetCount);
         return 1;
     }
 
-    loadImagesData(argv[1], imageDatasetCount, false);
+    // I like to sample the images produced here to sanity check that my arrays have been loaded correctly
+    // Using a python plotter to view the grey scaled value
+    output_sample_images(imageDatasetCount);
+
+
 
     return 0;
 }

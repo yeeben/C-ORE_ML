@@ -1,17 +1,12 @@
-#include "stdio.h"
-#include <stdint.h>
-
-#define HEIGHT_IMAGE 28
-#define WIDTH_IMAGE 28
-#define OUTPUT_LAYER_SIZE 10
-
-static uint32_t image[HEIGHT_IMAGE][WIDTH_IMAGE] = {};
+#include <stdio.h> 
+#include <stdlib.h> 
+#include "nueralBuildingBlocks.h"
 
 
 int main() {
-    
+    float test = ((float)rand() / (float)RAND_MAX )- 0.5;
 
-    printf("Hello World\n");
+    printf("%f", test);
     return 0;
 }
 

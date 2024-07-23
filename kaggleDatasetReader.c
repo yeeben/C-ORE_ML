@@ -2,41 +2,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-
-#define IMAGES_MAGIC_NUMBER 2051
-#define LABEL_MAGIC_NUMBER 2049
-
-#define BITS_IN_BYTE 8
-#define IMAGE_HEADER_BUFFER_SIZE 16
-#define LABEL_HEADER_BUFFER_SIZE 8
-
-#define KAGGLE_IMAGE_HEIGHT 28
-#define KAGGLE_IMAGE_WIDTH 28
-#define KAGGLE_DATASET_MAX_SIZE 60000
-
-
-struct ImageHeader {
-    uint32_t magic;
-    uint32_t size;
-    uint32_t rows;
-    uint32_t columns;
-};
-
-struct LabelHeader {
-    uint32_t magic;
-    uint32_t size;
-};
-
-struct GreyScaleImage {
-    uint8_t pixels[KAGGLE_IMAGE_HEIGHT][KAGGLE_IMAGE_WIDTH];
-};
-
-static struct GreyScaleImage imageDataset[KAGGLE_DATASET_MAX_SIZE + 1] = {};
-static uint8_t labelDataset[KAGGLE_DATASET_MAX_SIZE + 1] = {};
-
+#include "kaggleDatasetReader.h"
 
 void readImagesHeader(FILE* fp, uint32_t* imageDatasetCount) {
-    struct ImageHeader header = {};
+    ImageHeader header = {};
     uint8_t headerReadBuffer[IMAGE_HEADER_BUFFER_SIZE] = {};
 
     if (fp == NULL) {
@@ -65,7 +34,7 @@ void readImagesHeader(FILE* fp, uint32_t* imageDatasetCount) {
 }
 
 void readLabelsHeader(FILE* fp, uint32_t *labelDatasetCount) {
-    struct LabelHeader header = {};
+    LabelHeader header = {};
     
     if (fp == NULL) {
         perror("Error opening file");
@@ -91,7 +60,7 @@ void readLabelsHeader(FILE* fp, uint32_t *labelDatasetCount) {
     *labelDatasetCount = header.size;
 }
 
-void loadImagesData(const char *filename, uint32_t* imageDatasetCount) {    
+void loadImagesData(GreyScaleImage *imageDataset[KAGGLE_DATASET_MAX_SIZE], const char *filename, uint32_t* imageDatasetCount) {    
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
         perror("Error opening file");
@@ -107,7 +76,7 @@ void loadImagesData(const char *filename, uint32_t* imageDatasetCount) {
     // I like to sample the images produced here to sanity check that my arrays have been loaded correctly
     // Using a python plotter to view the grey scaled value
 }
-void loadLabelsData(const char *filename, uint32_t* imageDatasetCount) {
+void loadLabelsData(uint8_t *labelDataset[KAGGLE_DATASET_MAX_SIZE], const char *filename, uint32_t* imageDatasetCount) {
     
     FILE *file = fopen(filename, "r");
     if (file == NULL) {
@@ -123,50 +92,6 @@ void loadLabelsData(const char *filename, uint32_t* imageDatasetCount) {
     fclose(file);
 }
 
-void output_sample_images(uint32_t imageDatasetCount) {
-    for(int i = 0; i < 6; i++) {
-
-        char outputFilename[50];
-        uint32_t sampledIdx = rand() % imageDatasetCount;
-        uint8_t sampledLabel = labelDataset[sampledIdx];
-        snprintf(outputFilename, sizeof(outputFilename), "outFile/sample%d_idx%d.png", sampledLabel, sampledIdx);
-
-        FILE *outFile = fopen(outputFilename, "wb");
-        if (outFile == NULL) {
-            perror("Error opening output file");
-            continue;
-        }
-        fwrite(&imageDataset[sampledIdx], 1, KAGGLE_IMAGE_HEIGHT * KAGGLE_IMAGE_WIDTH, outFile);
-        fclose(outFile);
-    }
-}
-
-int main(int argc, char *argv[]) {
-    uint32_t imageDatasetCount = 0;
-    uint32_t labelDatasetCount = 0;
-    printf("\n");
-    printf("Starting Reading Process\n");
-
-
-    if (argc < 3) {
-        fprintf(stderr, "Usage: %s <filename>  <filename>\n", argv[0]);
-        return 1;
-    }
-
-
-    loadImagesData(argv[1], &imageDatasetCount);
-    loadLabelsData(argv[2], &labelDatasetCount);
-
-    if (imageDatasetCount != labelDatasetCount) {
-        fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", imageDatasetCount, labelDatasetCount);
-        return 1;
-    }
-
-    // I like to sample the images produced here to sanity check that my arrays have been loaded correctly
-    // Using a python plotter to view the grey scaled value
-    output_sample_images(imageDatasetCount);
-
-
-
-    return 0;
+void test_func() {
+    printf("Hello World\n");
 }

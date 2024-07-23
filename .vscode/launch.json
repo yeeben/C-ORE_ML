@@ -5,7 +5,7 @@
             "name": "C/C++: clang build and debug active file",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.out",
             "args": ["minst_dataset/t10k-images.idx3-ubyte", "minst_dataset/t10k-labels.idx1-ubyte"],
             // "args": ["minst_dataset/train-images.idx3-ubyte", "minst_dataset/train-labels.idx1-ubyte"],
             "stopAtEntry": false,

@@ -58,13 +58,29 @@ int main(int argc, char *argv[]) {
     }
 
 
-    loadImagesData(argv[1], &image_dataset_count);
-    loadLabelsData(argv[2], &label_dataset_count);
+    KaggleImage_t *pImages = loadImagesData(argv[1], &image_dataset_count);
+
+    if (pImages == NULL) {
+        fprintf(stderr, "Error loading images\n");
+        return 1;
+    }
+
+    uint8_t *pLabels = loadLabelsData(argv[2], &label_dataset_count);
+
+    if (pLabels == NULL) {
+        fprintf(stderr, "Error loading labels\n");
+        return 1;
+    }
 
     if (image_dataset_count != label_dataset_count && image_dataset_count < 1) {
         fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", image_dataset_count, label_dataset_count);
         return 1;
     }
+
+    outFileSampleImage(pImages, pLabels, image_dataset_count);
+
+    free(pImages);
+    free(pLabels);
 
     return 0;
 }

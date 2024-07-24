@@ -7,14 +7,14 @@
 #define KAGGLE_IMAGE_SIZE KAGGLE_IMAGE_WIDTH * KAGGLE_IMAGE_HEIGHT
 #define KAGGLE_LABELS 10
 
-typedef struct{
+typedef struct {
     uint32_t magic;
     uint32_t size;
     uint32_t rows;
     uint32_t columns;
 } ImageHeader_t;
 
-typedef struct{
+typedef struct {
     uint32_t magic;
     uint32_t size;
 } LabelHeader_t;
@@ -23,7 +23,7 @@ typedef struct {
     uint8_t pixels[KAGGLE_IMAGE_SIZE];
 } KaggleImage_t;
 
-void loadImagesData(const char *filename, uint32_t* imageDatasetCount);
-void loadLabelsData(const char *filename, uint32_t* imageDatasetCount);
-
+KaggleImage_t *loadImagesData(const char *filename, uint32_t* imageDatasetCount);   
+uint8_t *loadLabelsData(const char *filename, uint32_t* imageDatasetCount);
+void outFileSampleImage(KaggleImage_t *images, uint8_t *labels, uint32_t imageDatasetCount);
 

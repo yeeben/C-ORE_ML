@@ -16,6 +16,16 @@ typedef struct {
     float weights[KAGGLE_OUTPUT_LABELS][KAGGLE_OUTPUT_LABELS];
 } HiddenLayer_t;
 
-void init_params(NetworkLayer_t *layer, HiddenLayer_t *hiddenLayer);
-float *forward_prop(NetworkLayer_t *layer, HiddenLayer_t *hiddenLayer, KaggleImage_t *singleImage);
+typedef struct {
+    float bias_grad[KAGGLE_OUTPUT_LABELS];
+    float weights_grad[KAGGLE_OUTPUT_LABELS][KAGGLE_IMAGE_SIZE];
+} NetworkLayerGradient_t;
+
+typedef struct {
+    float bias_grad[KAGGLE_OUTPUT_LABELS];
+    float weights_grad[KAGGLE_OUTPUT_LABELS][KAGGLE_OUTPUT_LABELS];
+} HiddenLayerGradient_t;
+
+void gradient_descent(KaggleImage_t *pImages, uint8_t *pLabels, uint32_t dataset_size, float alpha, uint32_t epochs);
+
 #endif

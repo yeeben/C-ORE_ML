@@ -2,6 +2,7 @@
     "files.associations": {
         "stdint.h": "c",
         "nueralbuildingblocks.h": "c",
-        "kaggledatasetreader.h": "c"
+        "kaggledatasetreader.h": "c",
+        "__locale": "c"
     }
 }

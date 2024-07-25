@@ -46,8 +46,10 @@
 
 int main(int argc, char *argv[]) {
 
-    uint32_t image_dataset_count = 0;
-    uint32_t label_dataset_count = 0;
+    uint32_t imageDatasetCount = 0;
+    uint32_t labelDatasetCount = 0;
+    float alpha = 0.10;
+    uint32_t epochs = 100;
 
     printf("\n");
     printf("Starting Reading Process\n");
@@ -58,44 +60,34 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    KaggleImage_t *pImages = loadImagesData(argv[1], &image_dataset_count);
+    KaggleImage_t *pImages = loadImagesData(argv[1], &imageDatasetCount);
 
     if (pImages == NULL) {
         fprintf(stderr, "Error loading images\n");
         return 1;
     }
 
-    uint8_t *pLabels = loadLabelsData(argv[2], &label_dataset_count);
+    uint8_t *pLabels = loadLabelsData(argv[2], &labelDatasetCount);
 
     if (pLabels == NULL) {
         fprintf(stderr, "Error loading labels\n");
         return 1;
     }
 
-    if (image_dataset_count != label_dataset_count && image_dataset_count < 1) {
-        fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", image_dataset_count, label_dataset_count);
+    if (labelDatasetCount != labelDatasetCount && imageDatasetCount < 1) {
+        fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", imageDatasetCount, labelDatasetCount);
         return 1;
     }
 
     // outFileSampleImage(pImages, pLabels, image_dataset_count);
 
-
-    int i, j = 0;
-    NetworkLayer_t *inputLayer = (NetworkLayer_t *)calloc(1, sizeof(NetworkLayer_t));
-    HiddenLayer_t *hiddenLayer = (HiddenLayer_t *)calloc(1, sizeof(HiddenLayer_t));
-    KaggleImage_t singleImage = (KaggleImage_t)pImages[0];
-    uint8_t singleLabel = pLabels[0];
     
+    gradient_descent(pImages, pLabels, imageDatasetCount, alpha, epochs);
 
-    init_params(inputLayer, hiddenLayer);
-    float *pPredictions = forward_prop(inputLayer, hiddenLayer, &singleImage);
-    
 
 
     free(pImages);
     free(pLabels);
-    free(inputLayer);
-    free(hiddenLayer);
 
 
     return 0;

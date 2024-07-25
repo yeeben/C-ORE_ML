@@ -11,8 +11,11 @@ typedef struct {
     float weights[KAGGLE_OUTPUT_LABELS][KAGGLE_IMAGE_SIZE];
 } NetworkLayer_t;
 
+typedef struct {
+    float bias[KAGGLE_OUTPUT_LABELS];
+    float weights[KAGGLE_OUTPUT_LABELS][KAGGLE_OUTPUT_LABELS];
+} HiddenLayer_t;
 
-float relu(float x);
-void init_params(NetworkLayer_t *layer);
-
+void init_params(NetworkLayer_t *layer, HiddenLayer_t *hiddenLayer);
+float *forward_prop(NetworkLayer_t *layer, HiddenLayer_t *hiddenLayer, KaggleImage_t *singleImage);
 #endif

@@ -58,7 +58,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-
     KaggleImage_t *pImages = loadImagesData(argv[1], &image_dataset_count);
 
     if (pImages == NULL) {
@@ -82,23 +81,22 @@ int main(int argc, char *argv[]) {
 
 
     int i, j = 0;
-    NetworkLayer_t *layer = (NetworkLayer_t *)calloc(1, sizeof(NetworkLayer_t));
-    float A1[KAGGLE_OUTPUT_LABELS] = {0};
-    init_params(layer);
-
+    NetworkLayer_t *inputLayer = (NetworkLayer_t *)calloc(1, sizeof(NetworkLayer_t));
+    HiddenLayer_t *hiddenLayer = (HiddenLayer_t *)calloc(1, sizeof(HiddenLayer_t));
     KaggleImage_t singleImage = (KaggleImage_t)pImages[0];
-    for (i = 0; i < KAGGLE_IMAGE_SIZE; i++) {
-        for(j = 0; j < KAGGLE_OUTPUT_LABELS; j++) {
-            A1[j] += layer->weights[j][i] * singleImage.pixels[i];
-        }
-    }
+    uint8_t singleLabel = pLabels[0];
+    
 
-    for (i = 0; i < KAGGLE_OUTPUT_LABELS; i++) {
-        printf("A1[%d]: %f\n", i, A1[i]);
-    }
+    init_params(inputLayer, hiddenLayer);
+    float *pPredictions = forward_prop(inputLayer, hiddenLayer, &singleImage);
+    
+
 
     free(pImages);
     free(pLabels);
+    free(inputLayer);
+    free(hiddenLayer);
+
 
     return 0;
 }

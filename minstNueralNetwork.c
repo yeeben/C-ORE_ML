@@ -1,6 +1,7 @@
 #include <stdio.h> 
 #include <stdlib.h> 
 #include "kaggleDatasetReader.h"
+#include "nueralBuildingBlocks.h"
 /*
     Step 1: Load the dataset
         A[0] = X  
@@ -77,7 +78,24 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    outFileSampleImage(pImages, pLabels, image_dataset_count);
+    // outFileSampleImage(pImages, pLabels, image_dataset_count);
+
+
+    int i, j = 0;
+    NetworkLayer_t *layer = (NetworkLayer_t *)calloc(1, sizeof(NetworkLayer_t));
+    float A1[KAGGLE_OUTPUT_LABELS] = {0};
+    init_params(layer);
+
+    KaggleImage_t singleImage = (KaggleImage_t)pImages[0];
+    for (i = 0; i < KAGGLE_IMAGE_SIZE; i++) {
+        for(j = 0; j < KAGGLE_OUTPUT_LABELS; j++) {
+            A1[j] += layer->weights[j][i] * singleImage.pixels[i];
+        }
+    }
+
+    for (i = 0; i < KAGGLE_OUTPUT_LABELS; i++) {
+        printf("A1[%d]: %f\n", i, A1[i]);
+    }
 
     free(pImages);
     free(pLabels);

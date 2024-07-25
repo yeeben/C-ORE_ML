@@ -5,14 +5,11 @@
             "label": "C/C++: clang build active file",
             "command": "/usr/bin/gcc",
             "args": [
-                "-fcolor-diagnostics",
-                "-fansi-escape-codes",
-                "-w",
                 "${fileDirname}/*.c",
                 "-I${fileDirname}/include",
                 "-lm",
                 "-o",
-                "${fileDirname}/${fileBasenameNoExtension}.out"
+                "${fileDirname}/obj/${fileBasenameNoExtension}.o"
             ],
             "options": {
                 "cwd": "${fileDirname}"

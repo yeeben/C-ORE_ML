@@ -1,3 +1,6 @@
+#ifndef KAGGLE_DATASET_READER_H_
+#define KAGGLE_DATASET_READER_H_
+
 #include <stdint.h>
 
 #define IMAGES_MAGIC_NUMBER 2051
@@ -5,7 +8,6 @@
 #define KAGGLE_IMAGE_WIDTH 28
 #define KAGGLE_IMAGE_HEIGHT 28
 #define KAGGLE_IMAGE_SIZE KAGGLE_IMAGE_WIDTH * KAGGLE_IMAGE_HEIGHT
-#define KAGGLE_LABELS 10
 
 typedef struct {
     uint32_t magic;
@@ -27,3 +29,4 @@ KaggleImage_t *loadImagesData(const char *filename, uint32_t* imageDatasetCount)
 uint8_t *loadLabelsData(const char *filename, uint32_t* imageDatasetCount);
 void outFileSampleImage(KaggleImage_t *images, uint8_t *labels, uint32_t imageDatasetCount);
 
+#endif

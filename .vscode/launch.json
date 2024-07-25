@@ -1,19 +1,18 @@
 {
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "C/C++: clang build and debug active file",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${fileDirname}/${fileBasenameNoExtension}.out",
-            "args": ["minst_dataset/t10k-images.idx3-ubyte", "minst_dataset/t10k-labels.idx1-ubyte"],
-            // "args": ["minst_dataset/train-images.idx3-ubyte", "minst_dataset/train-labels.idx1-ubyte"],
-            "stopAtEntry": false,
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "C/C++: clang build active file"
-        }
-    ]
+"version": "0.2.0",
+"configurations": [
+    {
+        "name": "C/C++: clang build and debug active file",
+        "type": "cppdbg",
+        "request": "launch",
+        "program": "${fileDirname}/${fileBasenameNoExtension}.o",
+        "args": ["minst_dataset/t10k-images.idx3-ubyte", "minst_dataset/t10k-labels.idx1-ubyte"],
+        // "args": ["minst_dataset/train-images.idx3-ubyte", "minst_dataset/train-labels.idx1-ubyte"],
+        "cwd": "${fileDirname}",
+        "environment": [],
+        "externalConsole": true,
+        "MIMode": "lldb",
+        "preLaunchTask": "C/C++: clang build active file"
+    }
+]
 }

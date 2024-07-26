@@ -48,8 +48,9 @@ int main(int argc, char *argv[]) {
 
     uint32_t imageDatasetCount = 0;
     uint32_t labelDatasetCount = 0;
-    float alpha = 0.10;
+    float learning_rate = 0.10;
     uint32_t epochs = 100;
+    int i,j = 0;
 
     printf("\n");
     printf("Starting Reading Process\n");
@@ -74,20 +75,33 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (labelDatasetCount != labelDatasetCount && imageDatasetCount < 1) {
+    if (imageDatasetCount != labelDatasetCount && imageDatasetCount < 1) {
         fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", imageDatasetCount, labelDatasetCount);
         return 1;
     }
 
-    // outFileSampleImage(pImages, pLabels, image_dataset_count);
+    KaggleImageSubset_t *pImageSubset = (KaggleImageSubset_t *)calloc(1, sizeof(KaggleImageSubset_t));
 
+    for(i = 0; i < imageDatasetCount; i += BATCH_SIZE) {
+        printf("Image %d - %d \n", i, i+BATCH_SIZE);
+        pImageSubset->images = &pImages[i];
+        pImageSubset->labels = &pLabels[i];
+        if (i + BATCH_SIZE > imageDatasetCount) {
+            pImageSubset->imageDatasetCount = imageDatasetCount - i;
+        } else {
+            pImageSubset->imageDatasetCount = BATCH_SIZE;
+        }
+
+        outFileSampleImage(pImageSubset, i);
+    }
     
-    gradient_descent(pImages, pLabels, imageDatasetCount, alpha, epochs);
+    // gradient_descent(pImages, pLabels, imageDatasetCount, learning_rate, epochs);
 
 
 
     free(pImages);
     free(pLabels);
+    free(pImageSubset);
 
 
     return 0;

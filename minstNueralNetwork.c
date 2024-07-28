@@ -2,6 +2,8 @@
 #include <stdlib.h> 
 #include "kaggleDatasetReader.h"
 #include "nueralBuildingBlocks.h"
+
+#define TRAIN_STEPS 10
 /*
     Step 1: Load the dataset
         A[0] = X  
@@ -45,12 +47,17 @@
 
 
 int main(int argc, char *argv[]) {
+    uint32_t imageTrainDatasetCount = 0;
+    uint32_t labelTrainDatasetCount = 0;
 
-    uint32_t imageDatasetCount = 0;
-    uint32_t labelDatasetCount = 0;
+    uint32_t imageTestDatasetCount = 0;
+    uint32_t labelTestDatasetCount = 0;
+
     float learning_rate = 0.10;
-    uint32_t epochs = 100;
+    uint32_t epochs = 5;
+    uint32_t steps = 0;
     int i,j = 0;
+    float accuracy = 0.0;
 
     printf("\n");
     printf("Starting Reading Process\n");
@@ -61,47 +68,66 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    KaggleImage_t *pImages = loadImagesData(argv[1], &imageDatasetCount);
+    KaggleImage_t *pTrainImages = loadImagesData(argv[2], &imageTrainDatasetCount);
+    KaggleImage_t *pTestImages = loadImagesData(argv[1], &imageTestDatasetCount);
 
-    if (pImages == NULL) {
+    if (pTrainImages == NULL || pTestImages == NULL) {
         fprintf(stderr, "Error loading images\n");
         return 1;
     }
 
-    uint8_t *pLabels = loadLabelsData(argv[2], &labelDatasetCount);
+    uint8_t *pTrainLabels = loadLabelsData(argv[4], &labelTrainDatasetCount);
+    uint8_t *pTestLabels = loadLabelsData(argv[3], &labelTestDatasetCount);
 
-    if (pLabels == NULL) {
+    if (pTrainLabels == NULL || pTestLabels == NULL) {
         fprintf(stderr, "Error loading labels\n");
         return 1;
     }
 
-    if (imageDatasetCount != labelDatasetCount && imageDatasetCount < 1) {
-        fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", imageDatasetCount, labelDatasetCount);
+    if (imageTrainDatasetCount != labelTrainDatasetCount && imageTrainDatasetCount < 1) {
+        fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", imageTrainDatasetCount, labelTrainDatasetCount);
         return 1;
     }
 
-    KaggleImageSubset_t *pImageSubset = (KaggleImageSubset_t *)calloc(1, sizeof(KaggleImageSubset_t));
-
-    for(i = 0; i < imageDatasetCount; i += BATCH_SIZE) {
-        printf("Image %d - %d \n", i, i+BATCH_SIZE);
-        pImageSubset->images = &pImages[i];
-        pImageSubset->labels = &pLabels[i];
-        if (i + BATCH_SIZE > imageDatasetCount) {
-            pImageSubset->imageDatasetCount = imageDatasetCount - i;
-        } else {
-            pImageSubset->imageDatasetCount = BATCH_SIZE;
-        }
-
-        outFileSampleImage(pImageSubset, i);
+    if (imageTestDatasetCount != labelTestDatasetCount && imageTestDatasetCount < 1) {
+        fprintf(stderr, "Image and label dataset sizes do not match: %d != %d\n", imageTestDatasetCount, labelTestDatasetCount);
+        return 1;
     }
+
+    KaggleImageSubset_t *pTrainImageSubset = (KaggleImageSubset_t *)calloc(1, sizeof(KaggleImageSubset_t));
+    KaggleImageSubset_t *pTestImageSubset = (KaggleImageSubset_t *)calloc(1, sizeof(KaggleImageSubset_t));
+
+    NetworkLayer_t *inputLayer = (NetworkLayer_t *)calloc(1, sizeof(NetworkLayer_t));
+    HiddenLayer_t *hiddenLayer = (HiddenLayer_t *)calloc(1, sizeof(HiddenLayer_t));
+
+    init_params(inputLayer, hiddenLayer);
+    pTestImageSubset->images = pTestImages;
+    pTestImageSubset->labels = pTestLabels;
+    pTestImageSubset->imageDatasetCount = imageTestDatasetCount;
+    for(steps = 0; steps < TRAIN_STEPS; steps ++)
+        for(i = 0; i < imageTrainDatasetCount; i += BATCH_SIZE) {
+            pTrainImageSubset->images = &pTrainImages[i];
+            pTrainImageSubset->labels = &pTrainLabels[i];
+            if ((i + BATCH_SIZE) > imageTestDatasetCount) {
+                pTrainImageSubset->imageDatasetCount = imageTestDatasetCount - i;
+            } else {
+                pTrainImageSubset->imageDatasetCount = BATCH_SIZE;
+            }
+
+            // outFileSampleImage(pImageSubset, i);
+            gradient_descent(pTrainImageSubset, inputLayer, hiddenLayer, learning_rate, epochs);
+            accuracy = calculate_accuracy(pTestImageSubset, inputLayer, hiddenLayer);
+        }
+    }
+
     
-    // gradient_descent(pImages, pLabels, imageDatasetCount, learning_rate, epochs);
+    free(pTrainImages);
+    free(pTrainLabels);
+    free(pTrainImageSubset);
+    free(pTestImageSubset);
 
-
-
-    free(pImages);
-    free(pLabels);
-    free(pImageSubset);
+    free(inputLayer);
+    free(hiddenLayer);
 
 
     return 0;

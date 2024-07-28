@@ -26,6 +26,15 @@ typedef struct {
     float weights_grad[KAGGLE_OUTPUT_LABELS][KAGGLE_OUTPUT_LABELS];
 } HiddenLayerGradient_t;
 
-void gradient_descent(KaggleImage_t *pImages, uint8_t *pLabels, uint32_t dataset_size, float learning_rate, uint32_t epochs);
+void init_params(NetworkLayer_t *layer, HiddenLayer_t *hiddenLayer);
+
+void gradient_descent(KaggleImageSubset_t *dataset, 
+                        NetworkLayer_t *inputLayer,
+                        HiddenLayer_t *hiddenLayer,
+                        float learning_rate, uint32_t epochs);
+
+float calculate_accuracy(KaggleImageSubset_t *dataset, 
+                        NetworkLayer_t *inputLayer,
+                        HiddenLayer_t *hiddenLayer);
 
 #endif

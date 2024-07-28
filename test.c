@@ -4,15 +4,15 @@
 #include "nueralBuildingBlocks.h"
 
 
-void test_relu_1() {
-    int input[5] = {-2, -1, 0, 1, 2};
-    int expected_output[5] = {0, 0, 0, 1, 2};
-    for (int i = 0; i < 5; i++) {
-        if (relu(input[i]) != expected_output[i]) {
-            printf("Test failed for input: %d\n", input[i]);
-        }
-    }
-}
+// void test_relu_1() {
+//     int input[5] = {-2, -1, 0, 1, 2};
+//     int expected_output[5] = {0, 0, 0, 1, 2};
+//     for (int i = 0; i < 5; i++) {
+//         if (relu(input[i]) != expected_output[i]) {
+//             printf("Test failed for input: %d\n", input[i]);
+//         }
+//     }
+// }
 
 // int main() {
 //     test_relu_1();

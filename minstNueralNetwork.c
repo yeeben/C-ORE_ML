@@ -3,7 +3,10 @@
 #include "kaggleDatasetReader.h"
 #include "nueralBuildingBlocks.h"
 
-#define TRAIN_STEPS 50
+#define TRAIN_STEPS 500
+#define LEARNING_RATE 0.01
+#define BATCH_SIZE 50
+
 /*
     Step 1: Load the dataset
         A[0] = X  
@@ -58,20 +61,11 @@ int main(int argc, char *argv[]) {
     uint32_t imageTestDatasetCount = 0;
     uint32_t labelTestDatasetCount = 0;
 
-    float learning_rate = 0.05;
     uint32_t epochs = 0;
     int i,j = 0;
     float accuracy = 0.0;
 
-    printf("\n");
     printf("Starting Reading Process\n");
-
-
-    if (argc < 3) {
-        fprintf(stderr, "Usage: %s <filename>  <filename>\n", argv[0]);
-        return 1;
-    }
-
 
     KaggleImage_t *pTrainImages = loadImagesData("minst_dataset/t10k-images.idx3-ubyte", &imageTrainDatasetCount);
     KaggleImage_t *pTestImages = loadImagesData("minst_dataset/train-images.idx3-ubyte", &imageTestDatasetCount);
@@ -100,11 +94,13 @@ int main(int argc, char *argv[]) {
     }
 
 
-    init_params(&inputLayer, &hiddenLayer);
+    init_params(&inputLayer, &hiddenLayer); // Setting Random Weights and Biases for the network
+    // Initialize the Test set that will be used for accuracy measurements.
     pTestImageSubset.images = pTestImages;
     pTestImageSubset.labels = pTestLabels;
     pTestImageSubset.imageDatasetCount = imageTestDatasetCount;
 
+    // Training the network using a iterative approach of cycling through batches of images, and then recycling through the dataset.
     for(epochs = 0; epochs < TRAIN_STEPS; epochs ++) {
         for(i = 0; i < imageTrainDatasetCount; i += BATCH_SIZE) {
             pTrainImageSubset.images = &pTrainImages[i];
@@ -115,12 +111,41 @@ int main(int argc, char *argv[]) {
                 pTrainImageSubset.imageDatasetCount = BATCH_SIZE;
             }
 
-            gradient_descent(&pTrainImageSubset, &inputLayer, &hiddenLayer, learning_rate);
+            gradient_descent(&pTrainImageSubset, &inputLayer, &hiddenLayer, LEARNING_RATE);
         }
         accuracy = calculate_accuracy(&pTestImageSubset, &inputLayer, &hiddenLayer);
         printf("\n--------------------\n");
         printf("Steps: %d Accuracy: %f\n", epochs, accuracy);
     }
+    pTrainImageSubset.images = pTrainImages;
+    pTrainImageSubset.labels = pTrainLabels;
+    pTrainImageSubset.imageDatasetCount = imageTrainDatasetCount;
+
+    for(i = 0; i < imageTestDatasetCount; i += BATCH_SIZE) {
+        pTestImageSubset.images = &pTestImages[i];
+        pTestImageSubset.labels = &pTestLabels[i];
+        if ((i + BATCH_SIZE) > imageTestDatasetCount) {
+            pTestImageSubset.imageDatasetCount = imageTestDatasetCount - i;
+        } else {
+            pTestImageSubset.imageDatasetCount = BATCH_SIZE;
+        }
+        gradient_descent(&pTestImageSubset, &inputLayer, &hiddenLayer, LEARNING_RATE);
+    }
+
+
+    pTrainImageSubset.images = pTrainImages;
+    pTrainImageSubset.labels = pTrainLabels;
+    pTrainImageSubset.imageDatasetCount = imageTrainDatasetCount;
+
+    accuracy = calculate_accuracy(&pTrainImageSubset, &inputLayer, &hiddenLayer);
+    printf("Final Train Dataset Accuracy: %f\n", accuracy);
+
+    pTestImageSubset.images = pTestImages;
+    pTestImageSubset.labels = pTestLabels;
+    pTestImageSubset.imageDatasetCount = imageTestDatasetCount;
+
+    accuracy = calculate_accuracy(&pTestImageSubset, &inputLayer, &hiddenLayer);
+    printf("Final Test Dataset Accuracy: %f\n", accuracy);
 
     return 0;
 }

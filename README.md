@@ -10,3 +10,6 @@ And what better way to do that than by doing in a lower level language than what
 Final Train Dataset Accuracy: 0.945300
 Final Test Dataset Accuracy: 0.892200
 ```
+
+## Loss/ Accuracy Graph per step
+![training](chart.png)

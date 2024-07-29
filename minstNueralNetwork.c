@@ -3,7 +3,7 @@
 #include "kaggleDatasetReader.h"
 #include "nueralBuildingBlocks.h"
 
-#define TRAIN_STEPS 10
+#define TRAIN_STEPS 50
 /*
     Step 1: Load the dataset
         A[0] = X  
@@ -44,6 +44,11 @@
             A[2] = 10 x len(dataset)
     
 */
+KaggleImageSubset_t pTrainImageSubset = {};
+KaggleImageSubset_t pTestImageSubset = {};
+
+NetworkLayer_t inputLayer = {};
+HiddenLayer_t hiddenLayer = {};
 
 
 int main(int argc, char *argv[]) {
@@ -53,9 +58,8 @@ int main(int argc, char *argv[]) {
     uint32_t imageTestDatasetCount = 0;
     uint32_t labelTestDatasetCount = 0;
 
-    float learning_rate = 0.10;
-    uint32_t epochs = 5;
-    uint32_t steps = 0;
+    float learning_rate = 0.05;
+    uint32_t epochs = 0;
     int i,j = 0;
     float accuracy = 0.0;
 
@@ -68,16 +72,17 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    KaggleImage_t *pTrainImages = loadImagesData(argv[2], &imageTrainDatasetCount);
-    KaggleImage_t *pTestImages = loadImagesData(argv[1], &imageTestDatasetCount);
+
+    KaggleImage_t *pTrainImages = loadImagesData("minst_dataset/t10k-images.idx3-ubyte", &imageTrainDatasetCount);
+    KaggleImage_t *pTestImages = loadImagesData("minst_dataset/train-images.idx3-ubyte", &imageTestDatasetCount);
 
     if (pTrainImages == NULL || pTestImages == NULL) {
         fprintf(stderr, "Error loading images\n");
         return 1;
     }
 
-    uint8_t *pTrainLabels = loadLabelsData(argv[4], &labelTrainDatasetCount);
-    uint8_t *pTestLabels = loadLabelsData(argv[3], &labelTestDatasetCount);
+    uint8_t *pTrainLabels = loadLabelsData("minst_dataset/t10k-labels.idx1-ubyte", &labelTrainDatasetCount);
+    uint8_t *pTestLabels = loadLabelsData("minst_dataset/train-labels.idx1-ubyte", &labelTestDatasetCount);
 
     if (pTrainLabels == NULL || pTestLabels == NULL) {
         fprintf(stderr, "Error loading labels\n");
@@ -94,41 +99,28 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    KaggleImageSubset_t *pTrainImageSubset = (KaggleImageSubset_t *)calloc(1, sizeof(KaggleImageSubset_t));
-    KaggleImageSubset_t *pTestImageSubset = (KaggleImageSubset_t *)calloc(1, sizeof(KaggleImageSubset_t));
 
-    NetworkLayer_t *inputLayer = (NetworkLayer_t *)calloc(1, sizeof(NetworkLayer_t));
-    HiddenLayer_t *hiddenLayer = (HiddenLayer_t *)calloc(1, sizeof(HiddenLayer_t));
+    init_params(&inputLayer, &hiddenLayer);
+    pTestImageSubset.images = pTestImages;
+    pTestImageSubset.labels = pTestLabels;
+    pTestImageSubset.imageDatasetCount = imageTestDatasetCount;
 
-    init_params(inputLayer, hiddenLayer);
-    pTestImageSubset->images = pTestImages;
-    pTestImageSubset->labels = pTestLabels;
-    pTestImageSubset->imageDatasetCount = imageTestDatasetCount;
-    for(steps = 0; steps < TRAIN_STEPS; steps ++)
+    for(epochs = 0; epochs < TRAIN_STEPS; epochs ++) {
         for(i = 0; i < imageTrainDatasetCount; i += BATCH_SIZE) {
-            pTrainImageSubset->images = &pTrainImages[i];
-            pTrainImageSubset->labels = &pTrainLabels[i];
+            pTrainImageSubset.images = &pTrainImages[i];
+            pTrainImageSubset.labels = &pTrainLabels[i];
             if ((i + BATCH_SIZE) > imageTestDatasetCount) {
-                pTrainImageSubset->imageDatasetCount = imageTestDatasetCount - i;
+                pTrainImageSubset.imageDatasetCount = imageTestDatasetCount - i;
             } else {
-                pTrainImageSubset->imageDatasetCount = BATCH_SIZE;
+                pTrainImageSubset.imageDatasetCount = BATCH_SIZE;
             }
 
-            // outFileSampleImage(pImageSubset, i);
-            gradient_descent(pTrainImageSubset, inputLayer, hiddenLayer, learning_rate, epochs);
-            accuracy = calculate_accuracy(pTestImageSubset, inputLayer, hiddenLayer);
+            gradient_descent(&pTrainImageSubset, &inputLayer, &hiddenLayer, learning_rate);
         }
+        accuracy = calculate_accuracy(&pTestImageSubset, &inputLayer, &hiddenLayer);
+        printf("\n--------------------\n");
+        printf("Steps: %d Accuracy: %f\n", epochs, accuracy);
     }
-
-    
-    free(pTrainImages);
-    free(pTrainLabels);
-    free(pTrainImageSubset);
-    free(pTestImageSubset);
-
-    free(inputLayer);
-    free(hiddenLayer);
-
 
     return 0;
 }

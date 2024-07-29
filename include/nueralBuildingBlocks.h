@@ -31,7 +31,7 @@ void init_params(NetworkLayer_t *layer, HiddenLayer_t *hiddenLayer);
 void gradient_descent(KaggleImageSubset_t *dataset, 
                         NetworkLayer_t *inputLayer,
                         HiddenLayer_t *hiddenLayer,
-                        float learning_rate, uint32_t epochs);
+                        float learning_rate);
 
 float calculate_accuracy(KaggleImageSubset_t *dataset, 
                         NetworkLayer_t *inputLayer,

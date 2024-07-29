@@ -7,6 +7,8 @@
 #include "nueralBuildingBlocks.h"
 #include "kaggleDatasetReader.h"
 
+NetworkLayerGradient_t inputGrad =  {};
+HiddenLayerGradient_t hiddenGrad = {};
 
 
 static float get_rand_float() {
@@ -215,10 +217,8 @@ static void update_params(  NetworkLayer_t *layer,
 void gradient_descent(KaggleImageSubset_t *dataset, 
                         NetworkLayer_t *inputLayer,
                         HiddenLayer_t *hiddenLayer,
-                        float learning_rate, uint32_t epochs) {
+                        float learning_rate) {
 
-    NetworkLayerGradient_t *inputGrad = (NetworkLayerGradient_t *)calloc(1, sizeof(NetworkLayerGradient_t));
-    HiddenLayerGradient_t *hiddenGrad = (HiddenLayerGradient_t *)calloc(1, sizeof(HiddenLayerGradient_t));
 
     float A1[KAGGLE_OUTPUT_LABELS] = {0};
     float A2[KAGGLE_OUTPUT_LABELS] = {0};
@@ -228,8 +228,8 @@ void gradient_descent(KaggleImageSubset_t *dataset,
     int i,j = 0;
     float total_loss = 0.0f;
 
-    memset(inputGrad, 0, sizeof(NetworkLayerGradient_t));
-    memset(hiddenGrad, 0, sizeof(HiddenLayerGradient_t));
+    memset(&inputGrad, 0, sizeof(NetworkLayerGradient_t));
+    memset(&hiddenGrad, 0, sizeof(HiddenLayerGradient_t));
 
     total_loss = 0;
     for(j =0; j < dataset->imageDatasetCount; j++) {
@@ -237,17 +237,14 @@ void gradient_descent(KaggleImageSubset_t *dataset,
         total_loss += back_propogation(&dataset->images[j], 
                                         dataset->labels[j], 
                                         hiddenLayer, 
-                                        inputGrad, 
-                                        hiddenGrad, 
+                                        &inputGrad, 
+                                        &hiddenGrad, 
                                         A1, A2, Z1, Z2);
     }
-    if(i % 2 == 0) {
-        printf("Loss: %f\n", total_loss/dataset->imageDatasetCount);
-    }
-    update_params(inputLayer, hiddenLayer, inputGrad, hiddenGrad, learning_rate, dataset->imageDatasetCount);
+    printf("%f \t", total_loss/dataset->imageDatasetCount);
 
-    free(inputGrad);
-    free(hiddenGrad);
+    update_params(inputLayer, hiddenLayer, &inputGrad, &hiddenGrad, learning_rate, dataset->imageDatasetCount);
+
 }
 
 float calculate_accuracy(KaggleImageSubset_t *dataset, 
@@ -269,6 +266,5 @@ float calculate_accuracy(KaggleImageSubset_t *dataset,
         }
     }
 
-    printf("Accuracy: %f\n", (float)correct / (float)dataset->imageDatasetCount);
     return (float)correct / (float)dataset->imageDatasetCount;
 }
